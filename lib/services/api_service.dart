@@ -5,19 +5,12 @@ import '../models/product.dart';
 class ApiService {
   final String _baseUrl = 'https://fakestoreapi.com';
 
-  // GET: Fetch all products
-  // En ApiService
-  Future<List<Product>> getProducts({String? category}) async {
-    String url = '$_baseUrl/products';
-
-    // Si se proporciona una categoría, ajustamos la URL
-    if (category != null) {
-      url = '$_baseUrl/products/category/$category';
-    }
-
-    // Agregamos el límite de 20 para mejorar el rendimiento
-    url = '$url?limit=10';
-
+  Future<List<Product>> getProducts({
+    // Eliminamos el parámetro limit, o lo fijamos a 20 para cargar todos
+    int limit = 20, 
+    int skip = 0,
+  }) async {
+    final url = '$_baseUrl/products';
     final response = await http.get(Uri.parse(url));
 
     if (response.statusCode == 200) {
