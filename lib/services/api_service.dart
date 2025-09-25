@@ -3,19 +3,16 @@ import 'package:http/http.dart' as http;
 import '../models/product.dart';
 
 class ApiService {
-  final String _baseUrl = 'https://fakestoreapi.com';
+  final String _baseUrl = 'https://dummyjson.com';
 
-  Future<List<Product>> getProducts({
-    // Eliminamos el parámetro limit, o lo fijamos a 20 para cargar todos
-    int limit = 20, 
-    int skip = 0,
-  }) async {
-    final url = '$_baseUrl/products';
-    final response = await http.get(Uri.parse(url));
+  Future<List<Product>> getProducts({int limit = 10, int skip = 0}) async {
+    final url = Uri.parse('$_baseUrl/products?limit=$limit&skip=$skip');
+    final response = await http.get(url);
 
     if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.map((json) => Product.fromJson(json)).toList();
+      final Map<String, dynamic> data = json.decode(response.body);
+      final List<dynamic> productsJson = data['products'];
+      return productsJson.map((json) => Product.fromJson(json)).toList();
     } else {
       throw Exception('Failed to load products');
     }

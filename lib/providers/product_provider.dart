@@ -7,7 +7,6 @@ enum ProductState { idle, loading, success, error }
 class ProductProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
 
-  List<Product> _allProducts = [];
   List<Product> _products = [];
   String _errorMessage = '';
   ProductState _state = ProductState.idle;
@@ -41,14 +40,14 @@ class ProductProvider with ChangeNotifier {
     _hasMoreProducts = true;
 
     try {
-      // Cargar todos los productos de la API a una lista privada
-      _allProducts = await _apiService.getProducts();
-
-      // Tomar los primeros 10 para la lista inicial de la UI
-      _products = _allProducts.take(_pageSize).toList();
+      final fetchedProducts = await _apiService.getProducts(
+        limit: _pageSize,
+        skip: 0,
+      );
+      _products = fetchedProducts;
       _setState(ProductState.success);
 
-      if (_products.length < _pageSize || _products.length == _allProducts.length) {
+      if (_products.length < _pageSize) {
         _hasMoreProducts = false;
       }
     } catch (e) {
@@ -65,22 +64,20 @@ class ProductProvider with ChangeNotifier {
 
     try {
       _currentPage++;
-      final int start = _currentPage * _pageSize;
-      final int end = start + _pageSize;
+      final newProducts = await _apiService.getProducts(
+        limit: _pageSize,
+        skip: _currentPage * _pageSize,
+      );
 
-      if (start < _allProducts.length) {
-        final newProducts = _allProducts.sublist(start, end > _allProducts.length ? _allProducts.length : end);
-        _products.addAll(newProducts);
-
-        if (_products.length == _allProducts.length) {
-          _hasMoreProducts = false;
-        }
-      } else {
+      if (newProducts.isEmpty) {
         _hasMoreProducts = false;
+      } else {
+        _products.addAll(newProducts);
       }
-
+      
       _isLoadingMore = false;
       _setState(ProductState.success);
+
     } catch (e) {
       _isLoadingMore = false;
       _errorMessage = e.toString();
