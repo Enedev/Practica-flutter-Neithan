@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => ProductProvider(),
       child: MaterialApp(
-        title: 'Fake Store App',
+        title: 'Practica flutter Neithan',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),

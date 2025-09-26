@@ -6,102 +6,177 @@ import 'product_form_screen.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
+  const ProductDetailScreen({super.key, required this.product});
 
-  const ProductDetailScreen({
-    super.key,
-    required this.product,
-  });
+  // Muestra el diálogo de confirmación para eliminar
+  void _showDeleteConfirmation(BuildContext context, ProductProvider provider, Product product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[850],
+        title: const Text('Confirmar Eliminación', style: TextStyle(color: Colors.white)),
+        content: Text('¿Estás seguro de que quieres eliminar ${product.title}?', style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: () {
+              provider.deleteProduct(product.id);
+              // Vuelve a la pantalla principal (lista)
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(product.title),
-      ),
-      body: Consumer<ProductProvider>(
-        builder: (context, provider, child) {
-          // Busca el producto actualizado en la lista del provider
-          final updatedProduct = provider.products.firstWhere(
-            (p) => p.id == product.id,
-            orElse: () => product, // Usa el original si no se encuentra
-          );
+    final provider = Provider.of<ProductProvider>(context, listen: false);
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        title: const Text(
+          'Detalle del Producto',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.black,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center, // Alinea el contenido de la columna al centro
+          children: [
+            // Imagen del Producto
+            ClipRRect(
+              borderRadius: BorderRadius.circular(15.0),
+              child: Image.network(
+                product.image,
+                height: 300,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 100, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Título
+            Text(
+              product.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Precio
+            Text(
+              '\$${product.price.toStringAsFixed(2)}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            
+            // Contenedor de la Descripción
+            Container(
+              padding: const EdgeInsets.all(15.0),
+              decoration: BoxDecoration(
+                color: Colors.grey[900],
+                borderRadius: BorderRadius.circular(15.0),
+                border: Border.all(color: Colors.grey.shade700, width: 1),
+              ),
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    'Descripción:',
+                    style: TextStyle(
+                      color: const Color.fromRGBO(255, 255, 255, 0.8),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    product.description,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color.fromRGBO(255, 255, 255, 0.7),
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Categoría
+            Text(
+              'Categoría: ${product.category}',
+              style: TextStyle(
+                color: const Color.fromRGBO(255, 255, 255, 0.7),
+                fontSize: 16,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // Botones de Acción (Centrados y separados)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Center(
-                  child: Image.network(
-                    updatedProduct.image,
-                    height: 250,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, size: 250),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  updatedProduct.title,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Precio: \$${updatedProduct.price.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    color: Colors.green,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Descripción:',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  updatedProduct.description,
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductFormScreen(product: updatedProduct),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Editar'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        provider.deleteProduct(updatedProduct.id);
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.delete),
-                      label: const Text('Eliminar'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
+                // Botón Editar
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProductFormScreen(product: product),
                       ),
-                    ),
-                  ],
+                    );
+                  },
+                  icon: const Icon(Icons.edit, color: Colors.black),
+                  label: const Text('Editar', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+                const SizedBox(width: 20),
+                // Botón Eliminar
+                ElevatedButton.icon(
+                  onPressed: () => _showDeleteConfirmation(context, provider, product),
+                  icon: const Icon(Icons.delete, color: Colors.white),
+                  label: const Text('Eliminar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
               ],
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

@@ -17,30 +17,19 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id'],
-      title: json['title'],
-      price: json['price'],
-      description: json['description'],
-      category: json['category'],
-      image: json['thumbnail'],
+      id: json['id'] as int? ?? 0,
+      title: json['title'] as String? ?? 'N/A',
+      price: json['price'] as num? ?? 0.0,
+      description: json['description'] as String? ?? 'Sin descripción',
+      category: json['category'] as String? ?? 'general',
+      // Usa 'thumbnail' o 'image' si está disponible, con un fallback seguro.
+      image: (json['thumbnail'] ?? json['image'] ?? 'https://via.placeholder.com/150').toString(),
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'price': price,
-      'description': description,
-      'category': category,
-      'image': image,
-    };
-  }
-
-  // Se añade el método toMap para compatibilidad con tu código
+  // toMap SIMPLIFICADO: Solo incluye campos básicos.
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'title': title,
       'price': price,
       'description': description,

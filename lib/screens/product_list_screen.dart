@@ -40,19 +40,31 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final provider = Provider.of<ProductProvider>(context);
 
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Fake Store'),
+        title: const Text(
+          'Tienda en Flutter',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.black,
+        elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56.0),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextFormField(
-              decoration: const InputDecoration(
+              style: const TextStyle(color: Colors.black),
+              decoration: InputDecoration(
                 hintText: 'Buscar productos...',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15.0),
+                  borderSide: BorderSide.none,
+                ),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
               ),
               onChanged: (query) {
                 provider.updateSearchQuery(query);
@@ -65,19 +77,19 @@ class _ProductListScreenState extends State<ProductListScreen> {
         builder: (context, provider, child) {
           switch (provider.state) {
             case ProductState.loading:
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator(color: Colors.white));
             case ProductState.error:
-              return Center(child: Text('Error: ${provider.errorMessage}'));
+              return Center(child: Text('Error: ${provider.errorMessage}', style: const TextStyle(color: Colors.white)));
             case ProductState.success:
             case ProductState.idle:
               if (provider.filteredProducts.isEmpty) {
-                return const Center(child: Text('No products found.'));
+                return const Center(child: Text('No products found.', style: TextStyle(color: Colors.white)));
               }
               return ListView.builder(
                 itemCount: provider.filteredProducts.length + (provider.hasMoreProducts ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == provider.filteredProducts.length) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Colors.white));
                   }
                   final product = provider.filteredProducts[index];
                   return ProductListItem(product: product);
@@ -96,7 +108,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
             ),
           );
         },
-        child: const Icon(Icons.add),
+        backgroundColor: Colors.white,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
   }
@@ -113,17 +126,31 @@ class ProductListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: Colors.grey[900],
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
       child: ListTile(
-        leading: Image.network(
-          product.image,
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported),
+        contentPadding: const EdgeInsets.all(10.0),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8.0),
+          child: Image.network(
+            product.image,
+            width: 60,
+            height: 60,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported, color: Colors.white),
+          ),
         ),
-        title: Text(product.title),
-        subtitle: Text('\$${product.price.toStringAsFixed(2)}'),
+        title: Text(
+          product.title,
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          '\$${product.price.toStringAsFixed(2)}',
+          style: TextStyle(color: const Color.fromRGBO(255, 255, 255, 0.7),),
+        ),
         onTap: () {
           Navigator.push(
             context,
@@ -135,24 +162,25 @@ class ProductListItem extends StatelessWidget {
         trailing: Consumer<ProductProvider>(
           builder: (context, provider, child) {
             return IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
+              icon: const Icon(Icons.delete, color: Colors.redAccent),
               onPressed: () {
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Confirmar Eliminación'),
-                    content: Text('¿Estás seguro de que quieres eliminar ${product.title}?'),
+                    backgroundColor: Colors.grey[850],
+                    title: const Text('Confirmar Eliminación', style: TextStyle(color: Colors.white)),
+                    content: Text('¿Estás seguro de que quieres eliminar ${product.title}?', style: const TextStyle(color: Colors.white70)),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancelar'),
+                        child: const Text('Cancelar', style: TextStyle(color: Colors.white)),
                       ),
                       TextButton(
                         onPressed: () {
                           provider.deleteProduct(product.id);
                           Navigator.of(context).pop();
                         },
-                        child: const Text('Eliminar'),
+                        child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
                       ),
                     ],
                   ),

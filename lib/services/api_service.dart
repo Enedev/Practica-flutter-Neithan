@@ -18,6 +18,20 @@ class ApiService {
     }
   }
 
+  // NUEVO MÉTODO DE BÚSQUEDA
+  Future<List<Product>> searchProducts({required String query}) async {
+    final url = Uri.parse('$_baseUrl/products/search?q=$query');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> data = json.decode(response.body);
+      final List<dynamic> productsJson = data['products'];
+      return productsJson.map((json) => Product.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to search products');
+    }
+  }
+
   // GET: Fetch a single product by ID
   Future<Product> getProductById(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/products/$id'));
@@ -29,11 +43,11 @@ class ApiService {
       throw Exception('Failed to load product');
     }
   }
-
-  // POST: Add a new product
+  
   Future<Product> addProduct(Product product) async {
     final response = await http.post(
-      Uri.parse('$_baseUrl/products'),
+      // URL corregida
+      Uri.parse('$_baseUrl/products/add'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(product.toMap()),
     );
@@ -42,6 +56,7 @@ class ApiService {
       final dynamic data = json.decode(response.body);
       return Product.fromJson(data);
     } else {
+      print('Error al agregar producto: ${response.body}'); 
       throw Exception('Failed to add product');
     }
   }
@@ -58,6 +73,7 @@ class ApiService {
       final dynamic data = json.decode(response.body);
       return Product.fromJson(data);
     } else {
+      print('Error al actualizar producto: ${response.body}');
       throw Exception('Failed to update product');
     }
   }
