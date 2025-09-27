@@ -5,7 +5,7 @@ class Product {
   final String description;
   final String category;
   final String image;
-
+  //constructor
   Product({
     required this.id,
     required this.title,
@@ -14,7 +14,7 @@ class Product {
     required this.category,
     required this.image,
   });
-
+  //Lo use para para tomar un Map y convertirlo en un objeto
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'] as int? ?? 0,
@@ -22,12 +22,10 @@ class Product {
       price: json['price'] as num? ?? 0.0,
       description: json['description'] as String? ?? 'Sin descripción',
       category: json['category'] as String? ?? 'general',
-      // Usa 'thumbnail' o 'image' si está disponible, con un fallback seguro.
       image: (json['thumbnail'] ?? json['image'] ?? 'https://via.placeholder.com/150').toString(),
     );
   }
-
-  // toMap SIMPLIFICADO: Solo incluye campos básicos.
+  // convierto la instancia de la api aun map, esto es necesario para enviar datos a la api
   Map<String, dynamic> toMap() {
     return {
       'title': title,

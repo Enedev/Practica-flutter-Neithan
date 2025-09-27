@@ -20,8 +20,7 @@ class ProductProvider with ChangeNotifier {
   bool _hasMoreProducts = true;
   static const int _realProductLimit = 100;
 
-  // NUEVA ADICIÓN: Conjunto para rastrear IDs eliminados localmente (solo para API products ID >= 0)
-  Set<int> _deletedProductIds = {}; 
+  final Set<int> _deletedProductIds = {}; 
   
   List<Product> _searchResults = [];
 
@@ -37,17 +36,17 @@ class ProductProvider with ChangeNotifier {
     }
     return _searchResults;
   }
-  
+  //refresca el estado y notifica a los oyentes (actualiza UI)
   void _setState(ProductState newState) {
     _state = newState;
     notifyListeners();
   }
 
-  // --- FUNCIÓN DE FUSIÓN DE PRODUCTOS (Corregida) ---
+  // fusión de productos nuevos en la caché existente (_products)
   void _mergeProducts(List<Product> newProducts) {
       for (var newProduct in newProducts) {
         
-        // ¡VERIFICACIÓN CRÍTICA! Si el producto fue eliminado, no lo re-agregamos al caché.
+        //si el producto fue eliminado, no lo reagrego al cache.
         if (_deletedProductIds.contains(newProduct.id)) {
             continue;
         }
@@ -57,16 +56,15 @@ class ProductProvider with ChangeNotifier {
         if (index == -1) {
           _products.add(newProduct);
         }
-        // Nota: Si el índice no es -1, significa que ya está en la caché y no lo sobreescribimos
-        // para no perder posibles actualizaciones locales no reflejadas en la API de prueba.
+        // Nota: Si el índice no es -1, significa que ya está en la caché y no lo sobreescribo
       }
   }
   
-  // --- FUNCIÓN CENTRAL DE SINCRONIZACIÓN (Sin cambios) ---
+  // sincronizo las listas "visualmente" (_products y _searchResults)
   void _syncLists(Product updatedProduct) {
     final productId = updatedProduct.id;
 
-    // 1. Sincronizar _products (fuente de verdad)
+    // 1. Sincronizar _products (parte real o de verdad)
     final productIndex = _products.indexWhere((p) => p.id == productId);
     if (productIndex != -1) {
       _products[productIndex] = updatedProduct;
@@ -81,7 +79,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  // --- Funciones de Fetch y Paginación ---
+  // carga inicial y recarga (API + Fusión en Caché)
 
   Future<void> fetchProducts() async {
     _setState(ProductState.loading);
@@ -111,7 +109,7 @@ class ProductProvider with ChangeNotifier {
       _setState(ProductState.error);
     }
   }
-
+  //solicita el siguiente lote de productos (paginación)
   Future<void> loadMoreProducts() async {
     if (_isLoadingMore || !_hasMoreProducts) return;
 
@@ -141,7 +139,7 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
-  // --- Búsqueda (API + Fusión en Caché) ---
+  // Actualiza la consulta de búsqueda y filtra productos
   Future<void> updateSearchQuery(String query) async {
     _searchQuery = query;
 
@@ -156,11 +154,9 @@ class ProductProvider with ChangeNotifier {
       List<Product> apiResults = await _apiService.searchProducts(query: query);
       
       // 2. FUSIONAR resultados en _products. Esto CACHEA los nuevos resultados
-      //    pero AHORA respeta los productos en _deletedProductIds.
       _mergeProducts(apiResults);
 
       // 3. Llenar _searchResults filtrando sobre la caché principal (_products)
-      //    para incluir solo lo que actualmente está disponible Y coincide con la búsqueda.
       
       final lowerCaseQuery = query.toLowerCase();
 
@@ -229,14 +225,14 @@ class ProductProvider with ChangeNotifier {
         _deletedProductIds.add(id);
       }
 
-      // Elimina de _products (ESTA ES LA FUENTE DE VERDAD)
+      // Elimina de _products 
       _products.removeWhere((p) => p.id == id);
 
       if (id >= 0 && id <= _realProductLimit) { 
         await _apiService.deleteProduct(id);
       }
       
-      // Elimina de _searchResults para sincronización instantánea
+      // Elimina de _searchResults para la sincronizacion
       if (_searchQuery.isNotEmpty) {
         _searchResults.removeWhere((p) => p.id == id);
       }

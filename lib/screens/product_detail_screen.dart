@@ -24,7 +24,6 @@ class ProductDetailScreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               provider.deleteProduct(product.id);
-              // Vuelve a la pantalla principal (lista)
               Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
@@ -56,9 +55,9 @@ class ProductDetailScreen extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center, // Alinea el contenido de la columna al centro
+          crossAxisAlignment: CrossAxisAlignment.center, 
           children: [
-            // Imagen del Producto
+            // Imagen
             ClipRRect(
               borderRadius: BorderRadius.circular(15.0),
               child: Image.network(
@@ -94,7 +93,7 @@ class ProductDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             
-            // Contenedor de la Descripción
+            // Descripción
             Container(
               padding: const EdgeInsets.all(15.0),
               decoration: BoxDecoration(
@@ -139,11 +138,10 @@ class ProductDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // Botones de Acción (Centrados y separados)
+            // Botones
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Botón Editar
                 ElevatedButton.icon(
                   onPressed: () {
                     Navigator.push(
@@ -162,7 +160,6 @@ class ProductDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 20),
-                // Botón Eliminar
                 ElevatedButton.icon(
                   onPressed: () => _showDeleteConfirmation(context, provider, product),
                   icon: const Icon(Icons.delete, color: Colors.white),

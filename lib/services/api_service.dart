@@ -18,7 +18,6 @@ class ApiService {
     }
   }
 
-  // NUEVO MÉTODO DE BÚSQUEDA
   Future<List<Product>> searchProducts({required String query}) async {
     final url = Uri.parse('$_baseUrl/products/search?q=$query');
     final response = await http.get(url);
@@ -32,7 +31,6 @@ class ApiService {
     }
   }
 
-  // GET: Fetch a single product by ID
   Future<Product> getProductById(int id) async {
     final response = await http.get(Uri.parse('$_baseUrl/products/$id'));
 
@@ -56,12 +54,10 @@ class ApiService {
       final dynamic data = json.decode(response.body);
       return Product.fromJson(data);
     } else {
-      print('Error al agregar producto: ${response.body}'); 
       throw Exception('Failed to add product');
     }
   }
 
-  // PUT: Update an existing product
   Future<Product> updateProduct(Product product) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/products/${product.id}'),
@@ -73,12 +69,10 @@ class ApiService {
       final dynamic data = json.decode(response.body);
       return Product.fromJson(data);
     } else {
-      print('Error al actualizar producto: ${response.body}');
       throw Exception('Failed to update product');
     }
   }
 
-  // DELETE: Delete a product by ID
   Future<void> deleteProduct(int id) async {
     final response = await http.delete(Uri.parse('$_baseUrl/products/$id'));
 

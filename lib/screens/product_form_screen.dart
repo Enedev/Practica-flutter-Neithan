@@ -33,8 +33,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         'https://dummyjson.com/image/i/products/1/thumbnail.jpg'; // Imagen por defecto
   }
 
-  // En lib/screens/product_form_screen.dart
-
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
@@ -66,9 +64,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           listen: false,
         ).updateProduct(newProduct);
       }
-
-      // IMPORTANTE: Cerramos TODAS las pantallas (Form y Detail) y volvemos a la lista.
-      // Esto fuerza a la lista a usar la data más reciente del Provider.
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
@@ -80,12 +75,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     TextInputType keyboardType = TextInputType.text,
   }) {
     return Column(
-      // Alinea el texto de la etiqueta y el campo de texto al centro.
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Texto de la etiqueta (título del campo)
         Padding(
-          // CORRECCIÓN: Se eliminó el padding left: 8.0 para que el centrado funcione correctamente.
           padding: const EdgeInsets.only(bottom: 4.0),
           child: Text(
             label,
@@ -100,7 +92,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: SizedBox(
-            // Usamos SizedBox para que el TextFormField tome todo el ancho del ConstraintBox
             width: double.infinity,
             child: TextFormField(
               initialValue: initialValue,
@@ -201,7 +192,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   ),
                   const SizedBox(height: 30),
 
-                  // Botón de Envío
+                  // Botón
                   ElevatedButton(
                     onPressed: _submitForm,
                     style: ElevatedButton.styleFrom(
