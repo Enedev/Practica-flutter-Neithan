@@ -14,12 +14,17 @@ class ProductListScreen extends StatefulWidget {
 
 class _ProductListScreenState extends State<ProductListScreen> {
   final ScrollController _scrollController = ScrollController();
+  
+  // Variable para evitar que la notificación se dispare repetidamente
+  ProductState? _lastHandledState;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductProvider>(context, listen: false).fetchProducts();
+      // ✅ CORRECCIÓN: Inicializar _lastHandledState aquí para ignorar el estado de carga inicial.
+      _lastHandledState = Provider.of<ProductProvider>(context, listen: false).state;
     });
 
     // cargar más productos al llegar al final del scroll
@@ -28,6 +33,20 @@ class _ProductListScreenState extends State<ProductListScreen> {
         Provider.of<ProductProvider>(context, listen: false).loadMoreProducts();
       }
     });
+  }
+
+  // Función para mostrar la notificación
+  void _showSnackbar(BuildContext context, ProductState state, String message) {
+    Color color = (state == ProductState.success) ? Colors.green : Colors.redAccent;
+    String text = (state == ProductState.success) ? 'Operación Exitosa' : 'Error en la Operación';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$text: $message'),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -50,7 +69,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<ProductProvider>(context);
     final crossAxisCount = _getCrossAxisCount(context); 
 
     return Scaffold(
@@ -81,7 +99,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 contentPadding: const EdgeInsets.symmetric(vertical: 15.0, horizontal: 20.0),
               ),
               onChanged: (query) {
-                provider.updateSearchQuery(query);
+                Provider.of<ProductProvider>(context, listen: false).updateSearchQuery(query);
               },
             ),
           ),
@@ -89,10 +107,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
       ),
       body: Consumer<ProductProvider>(
         builder: (context, provider, child) {
+          
+          // Lógica de Notificación para operaciones CRUD (Delete)
+          // Se ejecuta después de que el frame ha sido construido
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // ✅ CONDICIÓN REFINADA: Solo reaccionar si es un estado final y no ha sido manejado (es decir, fue disparado por una acción reciente).
+            final bool isFinalState = provider.state == ProductState.success || provider.state == ProductState.error;
+            
+            if (isFinalState && _lastHandledState == null) {
+              
+              final isSuccess = provider.state == ProductState.success;
+              final message = isSuccess 
+                  ? 'Operación completada: Producto actualizado o eliminado.' // Mensaje genérico para operaciones que regresan a esta vista
+                  : provider.errorMessage;
+              
+              _showSnackbar(context, provider.state, message);
+              
+              // Actualiza el estado manejado para prevenir notificaciones duplicadas
+              _lastHandledState = provider.state;
+            }
+          });
+
           switch (provider.state) {
             case ProductState.loading:
+              // Muestra el indicador solo si la lista principal o la búsqueda están cargando
               return const Center(child: CircularProgressIndicator(color: Colors.white));
             case ProductState.error:
+              // Muestra el error solo si es un error de carga principal
               return Center(child: Text('Error: ${provider.errorMessage}', style: const TextStyle(color: Colors.white)));
             case ProductState.success:
             case ProductState.idle:
@@ -114,7 +155,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final product = provider.filteredProducts[index];
-                        return ProductListItem(product: product); 
+                        // Pasamos _lastHandledState setter para resetearlo en el botón de eliminar
+                        return ProductListItem(
+                          product: product,
+                          onDeleteConfirmed: () => _lastHandledState = null,
+                        ); 
                       },
                       childCount: provider.filteredProducts.length,
                     ),
@@ -155,10 +200,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
 // la card de los products
 class ProductListItem extends StatelessWidget {
   final Product product;
+  // ✅ NUEVO: Callback para resetear el estado de la notificación en la pantalla padre
+  final VoidCallback onDeleteConfirmed; 
   
   const ProductListItem({
     super.key,
     required this.product,
+    required this.onDeleteConfirmed, // Requerimos el nuevo callback
   });
 
   @override
@@ -215,8 +263,15 @@ class ProductListItem extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
+                          // ✅ CORRECCIÓN: 1. Llamar al callback para resetear el estado de notificación en el widget padre.
+                          onDeleteConfirmed();
+                          
+                          // Llamamos a deleteProduct
                           provider.deleteProduct(product.id);
+                          
+                          // 2. Cerrar el diálogo.
                           Navigator.of(context).pop();
+                          // El consumer en ProductListScreen ahora manejará la notificación de forma específica.
                         },
                         child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
                       ),

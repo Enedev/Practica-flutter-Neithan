@@ -80,7 +80,6 @@ class ProductProvider with ChangeNotifier {
   }
 
   // carga inicial y recarga (API + Fusión en Caché)
-
   Future<void> fetchProducts() async {
     _setState(ProductState.loading);
     
@@ -130,12 +129,14 @@ class ProductProvider with ChangeNotifier {
       }
       
       _isLoadingMore = false;
-      _setState(ProductState.success);
+      // Notificamos para que el UI se refresque sin cambiar el estado principal.
+      notifyListeners(); 
 
     } catch (e) {
       _isLoadingMore = false;
       _errorMessage = e.toString();
-      _setState(ProductState.error);
+      // Notificamos el error de paginación
+      notifyListeners(); 
     }
   }
 
@@ -145,9 +146,11 @@ class ProductProvider with ChangeNotifier {
 
     if (query.isEmpty) {
       _searchResults = [];
-      notifyListeners();
+      _setState(ProductState.success); 
       return;
     }
+
+    _setState(ProductState.loading); 
 
     try {
       // 1. Obtener resultados de la API para la consulta.
@@ -164,18 +167,20 @@ class ProductProvider with ChangeNotifier {
           .where((product) => product.title.toLowerCase().contains(lowerCaseQuery))
           .toList();
       
-      notifyListeners();
+      _setState(ProductState.success); 
 
     } catch (e) {
       _errorMessage = 'Error al buscar en la API: ${e.toString()}';
       _searchResults = [];
-      _setState(ProductState.error);
+      _setState(ProductState.error); 
     }
   }
 
   // --- CRUD (Crear, Actualizar, Eliminar) ---
 
   Future<void> addProduct(Product product) async {
+    _setState(ProductState.loading); 
+    
     try {
       final newProduct = await _apiService.addProduct(product);
       
@@ -194,31 +199,36 @@ class ProductProvider with ChangeNotifier {
         _searchResults.insert(0, uniqueProduct);
       }
 
-      notifyListeners();
+      _setState(ProductState.success); 
+      
     } catch (e) {
       _errorMessage = e.toString();
-      _setState(ProductState.error);
+      _setState(ProductState.error); 
     }
   }
 
   Future<void> updateProduct(Product updatedProduct) async {
+    _setState(ProductState.loading); 
+
     if (updatedProduct.id >= 0 && updatedProduct.id <= _realProductLimit) {
       try {
         await _apiService.updateProduct(updatedProduct);
       } catch (e) {
         _errorMessage = e.toString();
         _setState(ProductState.error);
-        return;
+        return; 
       }
     }
     
-    // Sincronizar ambas listas con el producto actualizado.
+    // Si la llamada a la API fue exitosa o era un producto local, actualizamos las listas.
     _syncLists(updatedProduct);
     
-    notifyListeners();
+    _setState(ProductState.success);
   }
 
   Future<void> deleteProduct(int id) async {
+    _setState(ProductState.loading); 
+
     try {
       // Agregamos el ID al conjunto de eliminados (solo si es un ID de API real)
       if (id >= 0) {
@@ -228,6 +238,7 @@ class ProductProvider with ChangeNotifier {
       // Elimina de _products 
       _products.removeWhere((p) => p.id == id);
 
+      // Eliminación en la API
       if (id >= 0 && id <= _realProductLimit) { 
         await _apiService.deleteProduct(id);
       }
@@ -237,10 +248,11 @@ class ProductProvider with ChangeNotifier {
         _searchResults.removeWhere((p) => p.id == id);
       }
 
-      notifyListeners();
+      _setState(ProductState.success); 
+      
     } catch (e) {
       _errorMessage = e.toString();
-      _setState(ProductState.error);
+      _setState(ProductState.error); 
     }
   }
 }

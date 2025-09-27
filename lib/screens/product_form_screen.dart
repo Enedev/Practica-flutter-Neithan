@@ -19,6 +19,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   late String _description;
   late String _category;
   late String _image;
+  
+  // Para evitar que la notificación se muestre varias veces
+  ProductState? _lastHandledState;
 
   @override
   void initState() {
@@ -31,6 +34,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     _image =
         product?.image ??
         'https://dummyjson.com/image/i/products/1/thumbnail.jpg'; // Imagen por defecto
+    
+    // ✅ CORRECCIÓN: Inicializar _lastHandledState después del primer frame.
+    // Esto previene que el listener reaccione al estado de 'success' heredado de la lista.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Establece el estado actual del provider como el último manejado, ignorándolo.
+        _lastHandledState = Provider.of<ProductProvider>(context, listen: false).state;
+    });
   }
 
   void _submitForm() {
@@ -49,6 +59,10 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         image: _image,
       );
 
+      // Limpiamos el estado anterior para asegurar que el listener reaccione
+      // al nuevo ciclo: loading -> success/error
+      _lastHandledState = null; 
+
       if (widget.product == null) {
         // Al agregar, enviamos el producto al Provider.
         // El Provider llama a la API y el nuevo producto tendrá el ID asignado por la API (>100).
@@ -64,7 +78,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           listen: false,
         ).updateProduct(newProduct);
       }
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // NOTA: Se elimina la navegación de aquí para permitir que el listener espere el resultado.
     }
   }
 
@@ -131,92 +145,153 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
+  // Función para mostrar la notificación y controlar la navegación
+  void _showSnackbarAndNavigate(ProductState state, String message, bool isEditing) {
+    Color color = (state == ProductState.success) ? Colors.green : Colors.redAccent;
+    String text = (state == ProductState.success) 
+        ? (isEditing ? 'Actualización Exitosa' : 'Creación Exitosa') 
+        : 'Error';
+    
+    // Muestra la notificación
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$text: $message'),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    
+    // Navega de vuelta a la lista solo si fue exitoso
+    if (state == ProductState.success) {
+      // Regresa a la primera ruta (ProductListScreen)
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.product != null;
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(
-          isEditing ? 'Editar Producto' : 'Agregar Producto',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.black,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  // Campos de Texto
-                  _buildTextField(
-                    label: 'Título',
-                    initialValue: _title,
-                    onSaved: (value) => _title = value!,
-                  ),
-                  _buildTextField(
-                    label: 'Precio',
-                    initialValue: _price.toString(),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    onSaved: (value) => _price = num.tryParse(value!) ?? 0.0,
-                  ),
-                  _buildTextField(
-                    label: 'Descripción',
-                    initialValue: _description,
-                    onSaved: (value) => _description = value!,
-                    keyboardType: TextInputType.multiline,
-                  ),
-                  _buildTextField(
-                    label: 'Categoría',
-                    initialValue: _category,
-                    onSaved: (value) => _category = value!,
-                  ),
-                  _buildTextField(
-                    label: 'URL de Imagen',
-                    initialValue: _image,
-                    onSaved: (value) => _image = value!,
-                  ),
-                  const SizedBox(height: 30),
+    return Consumer<ProductProvider>(
+      builder: (context, provider, child) {
+        // Lógica de Listener: Reaccionar al estado final de la operación
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // La condición ahora depende de que _lastHandledState haya sido reseteado (nulo) 
+          // en _submitForm Y que el estado actual no sea de carga/inicial.
+          final bool isFinalState = provider.state == ProductState.success || provider.state == ProductState.error;
 
-                  // Botón
-                  ElevatedButton(
-                    onPressed: _submitForm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.greenAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 15),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                    ),
-                    child: Text(
-                      isEditing ? 'Guardar Cambios' : 'Crear Producto',
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
+          if (isFinalState && _lastHandledState == null) {
+            
+            final isSuccess = provider.state == ProductState.success;
+            final message = isSuccess 
+                ? (isEditing ? 'Producto actualizado.' : 'Producto creado.')
+                : provider.errorMessage;
+            
+            _showSnackbarAndNavigate(provider.state, message, isEditing);
+            
+            _lastHandledState = provider.state;
+          }
+        });
+
+        // Control de carga para deshabilitar botones y mostrar overlay
+        bool isLoading = provider.state == ProductState.loading;
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            title: Text(
+              isEditing ? 'Editar Producto' : 'Agregar Producto',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
+            centerTitle: true,
+            backgroundColor: Colors.black,
+            elevation: 0,
+            iconTheme: const IconThemeData(color: Colors.white),
           ),
-        ),
-      ),
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          // Campos de Texto
+                          _buildTextField(
+                            label: 'Título',
+                            initialValue: _title,
+                            onSaved: (value) => _title = value!,
+                          ),
+                          _buildTextField(
+                            label: 'Precio',
+                            initialValue: _price.toString(),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onSaved: (value) => _price = num.tryParse(value!) ?? 0.0,
+                          ),
+                          _buildTextField(
+                            label: 'Descripción',
+                            initialValue: _description,
+                            onSaved: (value) => _description = value!,
+                            keyboardType: TextInputType.multiline,
+                          ),
+                          _buildTextField(
+                            label: 'Categoría',
+                            initialValue: _category,
+                            onSaved: (value) => _category = value!,
+                          ),
+                          _buildTextField(
+                            label: 'URL de Imagen',
+                            initialValue: _image,
+                            onSaved: (value) => _image = value!,
+                          ),
+                          const SizedBox(height: 30),
+
+                          // Botón
+                          ElevatedButton(
+                            onPressed: isLoading ? null : _submitForm, // Deshabilita si está cargando
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.greenAccent,
+                              padding: const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            child: Text(
+                              isEditing ? 'Guardar Cambios' : 'Crear Producto',
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Indicador de carga (Overlay)
+              if (isLoading)
+                Container(
+                  color: Colors.black.withAlpha(127), 
+                  child: const Center(
+                    child: CircularProgressIndicator(color: Colors.greenAccent),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
