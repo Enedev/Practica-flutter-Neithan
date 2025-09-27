@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/product.dart';
-import '../providers/product_provider.dart';
-import 'product_detail_screen.dart';
-import 'product_form_screen.dart';
+import '../models/product.dart'; // Asegúrate de que tu modelo 'Product' esté correcto
+import '../providers/product_provider.dart'; // Asegúrate de que tu 'ProductProvider' esté correcto
+import 'product_detail_screen.dart'; // Asegúrate de que esta pantalla exista
+import 'product_form_screen.dart'; // Asegúrate de que esta pantalla exista
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -22,6 +22,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       Provider.of<ProductProvider>(context, listen: false).fetchProducts();
     });
 
+    // Lógica para cargar más productos al llegar al final del scroll
     _scrollController.addListener(() {
       if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
         Provider.of<ProductProvider>(context, listen: false).loadMoreProducts();
@@ -35,9 +36,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.dispose();
   }
 
+  // Función para determinar el número de columnas (Responsividad)
+  int _getCrossAxisCount(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Si el ancho es >= 600px, usamos 2 columnas.
+    if (screenWidth >= 600) {
+      return 2; 
+    } else {
+      return 1; 
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ProductProvider>(context);
+    final crossAxisCount = _getCrossAxisCount(context); 
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -85,16 +99,42 @@ class _ProductListScreenState extends State<ProductListScreen> {
               if (provider.filteredProducts.isEmpty) {
                 return const Center(child: Text('No products found.', style: TextStyle(color: Colors.white)));
               }
-              return ListView.builder(
-                itemCount: provider.filteredProducts.length + (provider.hasMoreProducts ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == provider.filteredProducts.length) {
-                    return const Center(child: CircularProgressIndicator(color: Colors.white));
-                  }
-                  final product = provider.filteredProducts[index];
-                  return ProductListItem(product: product);
-                },
+              
+              // --- CustomScrollView y Slivers para Responsive Grid y Footer Centrado ---
+              return CustomScrollView(
                 controller: _scrollController,
+                slivers: [
+                  // 1. SliverGrid: Muestra los productos en 1 o 2 columnas.
+                  SliverGrid( 
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount, 
+                      // 3.8 para móvil (1 col), 4.8 para tablet (2 col) para eliminar espacio muerto
+                      childAspectRatio: (crossAxisCount == 1) ? 3.8 : 4.8, 
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 0.0, 
+                    ),
+                    // Usamos SliverChildBuilderDelegate para construir los elementos
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = provider.filteredProducts[index];
+                        return ProductListItem(product: product); 
+                      },
+                      childCount: provider.filteredProducts.length, // Número total de productos
+                    ),
+                  ),
+
+                  // 2. SliverToBoxAdapter: Indicador de carga (Footer centrado)
+                  if (provider.hasMoreProducts)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Center(
+                          // Ocupa el ancho completo, garantizando el centrado visual
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
               );
           }
         },
@@ -115,6 +155,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 }
 
+// --- ProductListItem: El diseño compacto de la tarjeta ---
 class ProductListItem extends StatelessWidget {
   final Product product;
   
@@ -127,7 +168,8 @@ class ProductListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.grey[900],
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      // Padding ajustado para GridView
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8), 
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15.0),
       ),
@@ -149,7 +191,7 @@ class ProductListItem extends StatelessWidget {
         ),
         subtitle: Text(
           '\$${product.price.toStringAsFixed(2)}',
-          style: TextStyle(color: const Color.fromRGBO(255, 255, 255, 0.7),),
+          style: TextStyle(color: const Color.fromRGBO(255, 255, 255, 0.7)),
         ),
         onTap: () {
           Navigator.push(
