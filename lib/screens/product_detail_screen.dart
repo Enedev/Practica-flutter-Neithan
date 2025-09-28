@@ -19,16 +19,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
-    
-    // ✅ Inicializar _lastHandledState después del primer frame.
-    // Esto previene que el listener reaccione al estado de 'success' heredado de la lista.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Establece el estado actual del provider como el último manejado, ignorándolo.
         _lastHandledState = Provider.of<ProductProvider>(context, listen: false).state;
     });
   }
 
-  // Función para mostrar la notificación
+  // notificación
   void _showSnackbar(BuildContext context, ProductState state, String message) {
     Color color = (state == ProductState.success) ? Colors.green : Colors.redAccent;
     String text = (state == ProductState.success) ? 'Operación Exitosa' : 'Error en la Operación';
@@ -42,7 +38,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // Muestra el diálogo de confirmación para eliminar
   void _showDeleteConfirmation(BuildContext context, ProductProvider provider, Product product) {
     showDialog(
       context: context,
@@ -57,10 +52,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
           TextButton(
             onPressed: () {
-              // Limpiamos el estado para que el listener reaccione al nuevo estado
               _lastHandledState = null; 
               provider.deleteProduct(product.id);
-              Navigator.of(context).pop(); // Cierra el diálogo
+              Navigator.of(context).pop();
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
           ),
@@ -72,14 +66,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
 
-    // Usamos Consumer para escuchar el estado del Provider para la eliminación
     return Consumer<ProductProvider>(
       builder: (context, provider, child) {
         
-        // Lógica de Listener: Reaccionar al estado final de la operación de eliminación
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          // La condición ahora depende de que _lastHandledState haya sido reseteado (nulo) 
-          // después de la confirmación Y que el estado actual no sea de carga/inicial.
           final bool isFinalState = provider.state == ProductState.success || provider.state == ProductState.error;
 
           if (isFinalState && _lastHandledState == null) {
@@ -92,16 +82,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             
             _lastHandledState = provider.state;
             
-            // Si la eliminación fue exitosa, navegamos de vuelta a la lista
             if (provider.state == ProductState.success) {
-                // Navegamos de vuelta a la primera ruta (ProductListScreen)
-                // Se usa el postFrameCallback para asegurar que el Scaffold esté listo
                 Navigator.of(context).popUntil((route) => route.isFirst);
             }
           }
         });
 
-        // Control de carga para deshabilitar botones
         bool isLoading = provider.state == ProductState.loading;
 
         return Scaffold(
@@ -119,7 +105,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               onPressed: () => Navigator.of(context).pop(),
             ),
           ),
-          body: Stack( // Usamos Stack para el overlay de carga, si se desea
+          body: Stack( 
             children: [
               SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
@@ -212,7 +198,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         ElevatedButton.icon(
-                          onPressed: isLoading ? null : () { // Deshabilita si está cargando
+                          onPressed: isLoading ? null : () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -244,7 +230,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ],
                 ),
               ),
-              // Indicador de carga (Overlay) si la eliminación tarda
+              // overlay
               if (isLoading)
                 Container(
                   color: Colors.black.withAlpha(127), 

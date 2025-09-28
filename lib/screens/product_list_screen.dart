@@ -15,7 +15,6 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final ScrollController _scrollController = ScrollController();
   
-  // Variable para evitar que la notificación se dispare repetidamente
   ProductState? _lastHandledState;
 
   @override
@@ -23,7 +22,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ProductProvider>(context, listen: false).fetchProducts();
-      // ✅ CORRECCIÓN: Inicializar _lastHandledState aquí para ignorar el estado de carga inicial.
       _lastHandledState = Provider.of<ProductProvider>(context, listen: false).state;
     });
 
@@ -35,7 +33,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
     });
   }
 
-  // Función para mostrar la notificación
+  // notificación
   void _showSnackbar(BuildContext context, ProductState state, String message) {
     Color color = (state == ProductState.success) ? Colors.green : Colors.redAccent;
     String text = (state == ProductState.success) ? 'Operación Exitosa' : 'Error en la Operación';
@@ -108,22 +106,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
       body: Consumer<ProductProvider>(
         builder: (context, provider, child) {
           
-          // Lógica de Notificación para operaciones CRUD (Delete)
-          // Se ejecuta después de que el frame ha sido construido
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            // ✅ CONDICIÓN REFINADA: Solo reaccionar si es un estado final y no ha sido manejado (es decir, fue disparado por una acción reciente).
             final bool isFinalState = provider.state == ProductState.success || provider.state == ProductState.error;
             
             if (isFinalState && _lastHandledState == null) {
               
               final isSuccess = provider.state == ProductState.success;
               final message = isSuccess 
-                  ? 'Operación completada: Producto actualizado o eliminado.' // Mensaje genérico para operaciones que regresan a esta vista
+                  ? 'Operación completada: Producto actualizado o eliminado.'
                   : provider.errorMessage;
               
               _showSnackbar(context, provider.state, message);
               
-              // Actualiza el estado manejado para prevenir notificaciones duplicadas
               _lastHandledState = provider.state;
             }
           });
@@ -155,7 +149,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
                         final product = provider.filteredProducts[index];
-                        // Pasamos _lastHandledState setter para resetearlo en el botón de eliminar
                         return ProductListItem(
                           product: product,
                           onDeleteConfirmed: () => _lastHandledState = null,
@@ -165,13 +158,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     ),
                   ),
 
-                  // SliverToBoxAdapter: Indicador de carga
+                  // indicador de carga
                   if (provider.hasMoreProducts)
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
                         child: Center(
-                          // Ocupa el ancho completo
                           child: CircularProgressIndicator(color: Colors.white),
                         ),
                       ),
@@ -200,13 +192,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
 // la card de los products
 class ProductListItem extends StatelessWidget {
   final Product product;
-  // ✅ NUEVO: Callback para resetear el estado de la notificación en la pantalla padre
   final VoidCallback onDeleteConfirmed; 
   
   const ProductListItem({
     super.key,
     required this.product,
-    required this.onDeleteConfirmed, // Requerimos el nuevo callback
+    required this.onDeleteConfirmed,
   });
 
   @override
@@ -263,15 +254,9 @@ class ProductListItem extends StatelessWidget {
                       ),
                       TextButton(
                         onPressed: () {
-                          // ✅ CORRECCIÓN: 1. Llamar al callback para resetear el estado de notificación en el widget padre.
                           onDeleteConfirmed();
-                          
-                          // Llamamos a deleteProduct
                           provider.deleteProduct(product.id);
-                          
-                          // 2. Cerrar el diálogo.
                           Navigator.of(context).pop();
-                          // El consumer en ProductListScreen ahora manejará la notificación de forma específica.
                         },
                         child: const Text('Eliminar', style: TextStyle(color: Colors.redAccent)),
                       ),

@@ -26,6 +26,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   @override
   void initState() {
     super.initState();
+    // valores por defecto
     final product = widget.product;
     _title = product?.title ?? '';
     _price = product?.price ?? 0.0;
@@ -35,10 +36,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         product?.image ??
         'https://dummyjson.com/image/i/products/1/thumbnail.jpg'; // Imagen por defecto
     
-    // ✅ CORRECCIÓN: Inicializar _lastHandledState después del primer frame.
-    // Esto previene que el listener reaccione al estado de 'success' heredado de la lista.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Establece el estado actual del provider como el último manejado, ignorándolo.
         _lastHandledState = Provider.of<ProductProvider>(context, listen: false).state;
     });
   }
@@ -59,8 +57,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         image: _image,
       );
 
-      // Limpiamos el estado anterior para asegurar que el listener reaccione
-      // al nuevo ciclo: loading -> success/error
       _lastHandledState = null; 
 
       if (widget.product == null) {
@@ -145,14 +141,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     );
   }
 
-  // Función para mostrar la notificación y controlar la navegación
+  // notificación y navegación
   void _showSnackbarAndNavigate(ProductState state, String message, bool isEditing) {
     Color color = (state == ProductState.success) ? Colors.green : Colors.redAccent;
     String text = (state == ProductState.success) 
         ? (isEditing ? 'Actualización Exitosa' : 'Creación Exitosa') 
         : 'Error';
     
-    // Muestra la notificación
+    // notificacion
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$text: $message'),
@@ -161,9 +157,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       ),
     );
     
-    // Navega de vuelta a la lista solo si fue exitoso
     if (state == ProductState.success) {
-      // Regresa a la primera ruta (ProductListScreen)
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
@@ -174,10 +168,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
     return Consumer<ProductProvider>(
       builder: (context, provider, child) {
-        // Lógica de Listener: Reaccionar al estado final de la operación
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          // La condición ahora depende de que _lastHandledState haya sido reseteado (nulo) 
-          // en _submitForm Y que el estado actual no sea de carga/inicial.
           final bool isFinalState = provider.state == ProductState.success || provider.state == ProductState.error;
 
           if (isFinalState && _lastHandledState == null) {
@@ -193,7 +184,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           }
         });
 
-        // Control de carga para deshabilitar botones y mostrar overlay
         bool isLoading = provider.state == ProductState.loading;
 
         return Scaffold(

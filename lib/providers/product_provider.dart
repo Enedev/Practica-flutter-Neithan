@@ -129,13 +129,11 @@ class ProductProvider with ChangeNotifier {
       }
       
       _isLoadingMore = false;
-      // Notificamos para que el UI se refresque sin cambiar el estado principal.
       notifyListeners(); 
 
     } catch (e) {
       _isLoadingMore = false;
       _errorMessage = e.toString();
-      // Notificamos el error de paginación
       notifyListeners(); 
     }
   }
