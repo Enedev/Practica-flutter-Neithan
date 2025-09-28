@@ -46,7 +46,7 @@ Para resolver esto, ideé una solución de **doble lista y fusión de "caché"**
 
 ## Video del funcionamiento de la Aplicación
 
-**[VIDEO LINK GOES HERE]**
+https://drive.google.com/file/d/14C9BpjrZn20EW4ty8iTeyLghDg_nacTo/view?usp=sharing
 
 ---
 
