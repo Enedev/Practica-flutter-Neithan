@@ -18,7 +18,7 @@ El archivo `ApiService` del proyecto implementa las siguientes operaciones de la
 | :--- | :--- | :--- | :--- |
 | **READ** (Paginación) | `GET` | `/products?limit={}&skip={}` | **Carga inicial y paginada** de la lista de productos. |
 | **SEARCH** | `GET` | `/products/search?q={}` | Permite **filtrar** la lista de productos por un término de búsqueda. |
-| **CREATE** (Añadir) | `POST` | `/products/add` | **Agrega** un nuevo producto a la lista (simulado; la API asigna IDs a partir de 101). |
+| **CREATE** (Añadir) | `POST` | `/products/add` | **Agrega** un nuevo producto a la lista. |
 | **UPDATE** (Editar) | `PUT` | `/products/{id}` | **Modifica** los datos de un producto existente. |
 | **DELETE** | `DELETE` | `/products/{id}` | **Elimina** un producto. |
 
@@ -30,7 +30,7 @@ El archivo `ApiService` del proyecto implementa las siguientes operaciones de la
 
 La aplicación utiliza la clase **ProductProvider** para gestionar el estado de los productos y orquestar las operaciones de la API, manejando la lógica central de la aplicación.
 
-En **ProductProvider**  implemente la lógica para la busqueda, tuve un problema con la paginación (scroll infinito), explicación del como realice el buscado para solucionar este problema :
+En **ProductProvider**  implemente la lógica para la busqueda, al inicio tuve un problema con la paginación (scroll infinito), explicación del como realice el buscado para solucionar este problema :
 
 - Al inicio, al buscar, la aplicación solo podía **filtrar entre los datos que ya habían sido cargados** (por medio del scroll infinito y la función `loadMoreProducts` no sobre el catálogo completo de la API.
 
